@@ -9,11 +9,12 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <cstdio>
 #include <ctime>
 #include <functional>
 using namespace std;
 
-const int mn = 200;
+const int mn = 1000000;
 
 int a[mn], b[mn], c[mn];
 
@@ -29,12 +30,12 @@ int main() {
 	PairingHeap<int> pq(mn);
 	for (int i = 0; i < mn; ++i) {
 		a[i] = (rand() << 15) + rand();
-//		a[i] = i;
+//		cin >> a[i];
 		pq.insert(i, a[i]);
-		cout << a[i] << " ";
+//		cout << a[i] << " ";
 	}
-	cout << endl;
-	
+	//cout << endl;
+
 	cout << "size = " << pq.size() << endl;
 	for (int i = 0; i < mn; ++i) {
 		PairingHeap<int>::Element tmp = pq.delete_min();
@@ -48,15 +49,24 @@ int main() {
 	}
 	cout << "size = " << pq.size() << endl;
 	for (int i = 0; i < mn; ++i) {
-		try{
+		try {
 			PairingHeap<int>::Element tmp = pq.remove(c[i]);
-			if(tmp.key != b[i]) {
+			if (tmp.key != b[i]) {
 				cout << "your remove is wrong!!!" << endl;
 			}
 		} catch (exception &e) {
-			cout << "c[i] = " <<c[i] <<endl;
+//				FILE *fout = fopen("debugdata.txt", "w");
+//				fprintf(fout, "%d\n", mn);
+//				for (int j = 0; j < mn; ++j) {
+//					fprintf(fout, "%d ", a[j]);
+//				}
+//				fclose(fout);
+//				exit(1);
+
+			cout << e.what() << endl;
+			cout << "c[i] = " << c[i] << endl;
 			break;
-		} 
+		}
 	}
 	cout << "size = " << pq.size() << endl;
 //	cout<<endl;

@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : PairingHeap.h
 // Author      : ftfish (ftfish@gmail.com)
-// Version     : 0.9
+// Version     : 0.95
 // Description : implementation of pairing heaps
 //============================================================================
 
@@ -69,8 +69,9 @@ public:
  *	  		Throws an exception if the id is invalid or there's no element with that id.
  *		void decrease_key(int id, const T& newkey):
  *			try to decrease the key of the element with the given id.
- *			Throws an exception if the id is invalid or there's no element with that id.
- *			It does nothing if newkey is not smaller than the current key of the element.
+ * 			Throws an exception if the id is invalid or there's no element with that id.
+ * 			It does nothing if newkey is larger than the current key of the element.
+ * 			If the new key is as small as the root, that node will be the made the new root, even if its current key equals to the new one.
  * Time:
  * 		Delete_min takes O(logn) amortized time.
  * 		Decrease_key is shown to run in O(loglogn) <= T <= O(logn) amortized time.
@@ -218,7 +219,7 @@ class PairingHeap {
 	 */
 	void recursively_destruct(PHNode *x) {
 		PHNode *xson = x->son;
-		if (xson == 0)
+		if (xson == 0) // the heap has only a root.
 			delete x;
 		else {
 			PHNode *p = xson;
@@ -272,8 +273,8 @@ public:
 	/**
 	 * try to insert an element with the given id and key.
 	 * Throws an exception if the id is invalid or there's already an element with that id.
-	
-	* Algo:
+
+	 * Algo:
 	 *		make a new node and merge it with the current root.
 	 */
 	void insert(int id, const T& key) {
@@ -307,7 +308,7 @@ public:
 		root = combine_siblings(rson);
 		return r;
 	}
-	
+
 	/**
 	 * removes and returns the element with the given id.
 	 * Throws an exception if the id is invalid or there's no element with that id.
@@ -325,13 +326,13 @@ public:
 	/**
 	 * try to decrease the key of the element with the given id.
 	 * Throws an exception if the id is invalid or there's no element with that id.
- 	 * It does nothing if newkey is not smaller than the current key of the element.
- 	 * If the new key is as small as the root, that node will be the made the root.
- 	 * Algo:
- 	 * 		cut the node with that id from the heap and then merge the subtree with the root.
+	 * It does nothing if newkey is larger than the current key of the element.
+	 * If the new key is as small as the root, that node will be the made the new root, even if its current key equals to the new one.
+	 * Algo:
+	 * 		cut the node with that id from the heap and then merge the subtree with the root.
 	 */
 	void decrease_key(int id, const T& newkey) {
-		if (less(newkey, get_key(id))) {
+		if (!less(get_key(id), newkey)) {
 			PHNode *p = pos[id];
 			// if the node is the root, we're happy.
 			if (p == root)
@@ -342,7 +343,7 @@ public:
 					PHNode *pp = p->parent;
 					pp->son = 0;
 					p->parent = 0;
-				} else {// else, it has siblings
+				} else { // else, it has siblings
 					PHNode *pp = p->parent;
 					// if its parent points to this node, point to another sibling.
 					if (pp->son == p)
