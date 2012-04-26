@@ -19,9 +19,14 @@ Time complexity:
 - All other methods take constant amortized time.
 	
 
-Latest version: 	0.9
+Latest version: 	0.95
 -----------------------
 
 Known issues:
 -------------
-- bug in remove(?)
+- none
+
+Future plan:
+------------
+- optimize the structure so that a maximum size is not needed in advance.
+- implement merge for different pairing heaps.
