@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : PairingHeap.cpp
 // Author      : ftfish (ftfish@gmail.com)
-// Version     : 0.1
+// Version     : 0.2
 // Description : Test program for PairingHeap.h
 //============================================================================
 
@@ -17,6 +17,7 @@ using namespace std;
 const int mn = 1000000;
 
 int a[mn], b[mn], c[mn];
+PairingHeap<int>::PH_Node *pos[mn];
 
 bool sorted(int n, int *a) {
 	for (int i = 1; i < n; ++i)
@@ -27,31 +28,36 @@ bool sorted(int n, int *a) {
 
 int main() {
 	srand(time(0));
-	PairingHeap<int> pq(mn);
+	PairingHeap<int> pq;
 	for (int i = 0; i < mn; ++i) {
 		a[i] = (rand() << 15) + rand();
 //		cin >> a[i];
-		pq.insert(i, a[i]);
+		pos[i] = pq.insert(a[i], i);
 //		cout << a[i] << " ";
 	}
 	//cout << endl;
 
 	cout << "size = " << pq.size() << endl;
 	for (int i = 0; i < mn; ++i) {
-		PairingHeap<int>::Element tmp = pq.delete_min();
-		b[i] = tmp.key;
-		c[i] = tmp.id;
+		PairingHeap<int>::PH_Element tmp = pq.delete_min();
+		b[i] = tmp.get_key();
+		c[i] = tmp.get_id();
+		pos[c[i]] = 0;
 //		cout << b[i] << " ";
 	}
 	cout << "size = " << pq.size() << endl;
+	cout << "sorted? = " << sorted(mn, b) << endl;
+	for (int i = 0; i < mn; ++i)
+		if (pos[i])
+			cout << "error happened" << endl;
 	for (int i = mn - 1; i >= 0; --i) {
-		pq.insert(i, a[i]);
+		pos[i] = pq.insert(a[i], i);
 	}
 	cout << "size = " << pq.size() << endl;
 	for (int i = 0; i < mn; ++i) {
 		try {
-			PairingHeap<int>::Element tmp = pq.remove(c[i]);
-			if (tmp.key != b[i]) {
+			PairingHeap<int>::PH_Element tmp = pq.remove(pos[c[i]]);
+			if (tmp.get_key() != b[i]) {
 				cout << "your remove is wrong!!!" << endl;
 			}
 		} catch (exception &e) {
@@ -70,6 +76,6 @@ int main() {
 	}
 	cout << "size = " << pq.size() << endl;
 //	cout<<endl;
-	cout << sorted(mn, b) << endl;
+	cout << "sorted? = " << sorted(mn, b) << endl;
 	return 0;
 }

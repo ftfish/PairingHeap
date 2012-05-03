@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : PairingHeap.h
 // Author      : ftfish (ftfish@gmail.com)
-// Version     : 0.95
+// Version     : 0.99
 // Description : implementation of pairing heaps
 //============================================================================
 
@@ -29,111 +29,111 @@ public:
 
 /**
  * The class of pairing heaps.
- * A pairing heap is a rooted tree satisfying the heap property.
- * This implementation is addressable and supports the usual operations of priority queues:
+ * A pairing heap is a rooted tree satisfying the heap property (key of a parent is no larger than that of its son).
+ * It supports the operations of usual (meldable/mergable) priority queues.
+ * This implementation is addressable: The address of an element will be returned at insertion and will not change thereafter.
  *
  * Template parameters:
- * 		typename T:
+ * 		typename KeyType:
  * 			The type of the keys in the pairing heap.
- * 			An element is a pair (id, key) where id can be used to identify an element.
- * 		typename Comparator = std::less<T>:
+ * 			An element is a pair (key, id) where id can be used to identify an element.
+ * 		typename IdType:
+ * 			The type of the id's in the pairing heap.
+ * 			An element is a pair (key, id) where id can be used to identify an element.
+ * 		typename Comparator = std::less<KeyType>:
  * 			The functor used to compare two keys. The default results in a min-priority queue
  *
  * Constructor:
- * 		PairingHeap(int max_size)
- * 		A maximal size must be specified for allocating space for the addressability.
- * 		After creation, the valid id's are: 0, 1, ..., max_size-1
+ * 		PairingHeap():	creates an empty pairing heap.
  *
- * Public methods:
+ *
+ * The following operations are supported:
  * 		size_t size():
  * 			returns the current size.
- *			returns the maximal size.
- *		size_t max_size():
- *			determines whether there's an element in the pq with the given id.
- *			This won't throw any exceptions.
- *		bool contains(int id):
+ *		void insert(const KeyType& key, int id):
+ *			insert an element with the given key and id.
  *		const Element &find_min():
  * 			returns the current minimal element in the priority queue.
- * 			Throws an exception if the pq is empty.
- *		const T& get_key(int id):
- *			returns the current key of the element with the given id.
- *			Throws an exception if the id is invalid or there's no element with that id.
- *		void insert(int id, const T& key):
- *			try to insert an element with the given id and key.
- *			Throws an exception if the id is invalid or there's already an element with that id.
+ * 			Throws an exception if the priority queue is empty.
  *		Element delete_min():
- *			removes and returns the current minimum in the pq.
- * 			Throws an exception if the pq is empty.
- * 		Element remove(int id):
- *			removes and returns the element with the given id.
- *	  		Throws an exception if the id is invalid or there's no element with that id.
- *		void decrease_key(int id, const T& newkey):
- *			try to decrease the key of the element with the given id.
- * 			Throws an exception if the id is invalid or there's no element with that id.
- * 			It does nothing if newkey is larger than the current key of the element.
- * 			If the new key is as small as the root, that node will be the made the new root, even if its current key equals to the new one.
+ *			removes and returns the current minimum in the priority queue.
+ * 			Throws an exception if the priority queue is empty.
+ * 		Element remove(PHNode *node):
+ *			removes and returns the element at the given address.
+ *		void decrease_key(PHNode *node, const KeyType& newkey):
+ *			trys to decrease the key of the element at the given address.
+ * 			It does nothing if newkey is no smaller than the current key of the element.
+ * 		void merge(PairingHeap<KeyType, IdType, Comparator> &ph)
+ *			merges "this" PairingHeap with the argument.
+ *			The PH in the argument will be made empty, but the elements in it will not be removed (but merged to "this").
+ * 			Pointers to the elements of the argument remain valid.
+ *
  * Time:
- * 		Delete_min takes O(logn) amortized time.
+ * 		Delete_min and remove take O(logn) amortized time.
  * 		Decrease_key is shown to run in O(loglogn) <= T <= O(logn) amortized time.
  * 		All other methods take constant amortized time.
  */
-template<typename T, typename Comparator = std::less<T> >
+template<typename KeyType = int, typename IdType = int, typename Comparator = std::less<KeyType> >
 class PairingHeap {
-
 	/**
-	 * The representation of an element: a pair (id, key).
-	 * Every element has a unique id.
+	 * The class of elements.
+	 * An element is a pair (key, id).
+	 * It's a struct with only getters to avoid invalid modifications.
 	 */
-	struct Element {
-		int id;
-		T key;
-		Element(int id, T key) :
-				id(id), key(key) {
+	class Element {
+		KeyType key;
+		IdType id;
+		Element(const KeyType &key, const IdType &id) :
+				key(key), id(id) {
+		}
+		friend class PairingHeap;
+	public:
+		const KeyType& get_key() const {
+			return key;
+		}
+		const IdType& get_id() const {
+			return id;
 		}
 	};
+
 	/**
-	 * The internal structure of a node in the heap.
-	 * Each node maintains 4 pointers:
-	 * 		the parent (0 if the current node is the root)
-	 * 		one of the children (0 if none)
-	 * 		the left and right siblings. The list of siblings is circular.
-	 *
+	 * The class of a node in the heap.
 	 */
-	struct PHNode {
+	class PHNode {
+		/*
+		 * Each node maintains 4 pointers:
+		 * 		the parent (0 if the current node is the root)
+		 * 		one of the children (0 if none)
+		 * 		the left and right siblings. The list of siblings is circular.
+		 */
 		Element elem;
 		PHNode *parent, *left, *right, *son;
-		PHNode(Element elem) :
+		PHNode(const Element &elem) :
 				elem(elem), parent(0), left(this), right(this), son(0) {
+		}
+		friend class PairingHeap;
+	public:
+		const Element& get_element() const {
+			return elem;
+		}
+		const KeyType& get_key() const {
+			return elem.key;
+		}
+		const IdType& get_id() const {
+			return elem.id;
 		}
 	};
 
-	// the current and maximal size.
-	int sz, maxsz;
+	// the current size.
+	int sz;
 	// the comparator functor
 	Comparator less;
-	// pos[i] is the address of the node with element with id = i.
-	PHNode **pos;
 	// the pointer to the root.
 	PHNode *root;
 
 	// the possible exceptions. (initialized below out of the class)
-	static const PH_Exception PH_EX_EMPTY, PH_EX_BAD_ID, PH_EX_ALREADY_EXISTS,
-			PH_EX_NO_SUCH_ELEMENT;
+	static const PH_Exception PH_EX_EMPTY;
 
-	// ensures id is valid and there's NO element with this id.
-	void ensure_not_existing(int id) const {
-		if (id < 0 || id >= maxsz)
-			throw PH_EX_BAD_ID;
-		if (pos[id])
-			throw PH_EX_ALREADY_EXISTS;
-	}
-	// ensures id is valid and there's ONE element with this id.
-	void ensure_existing(int id) const {
-		if (id < 0 || id >= maxsz)
-			throw PH_EX_BAD_ID;
-		if (pos[id] == 0)
-			throw PH_EX_NO_SUCH_ELEMENT;
-	}
 	// ensures the heap is non-empty
 	void ensure_nonempty() const {
 		if (sz == 0)
@@ -141,12 +141,13 @@ class PairingHeap {
 	}
 
 	/**
-	 * Merges nodes x and y.
-	 * They must not have parent or siblings.
-	 * Returns the resulting root.
+	 * Merges nodes x and y and returns the resulting root.
+	 * x and y must not have parent or siblings.
+	 * If either x or y is 0, the other node will be the result.
 	 * If nodes x and y have the same key, x will be the result.
 	 */
 	PHNode *merge(PHNode *x, PHNode *y) {
+		if(!x || !y) return x ? x : y;
 		if (less(y->elem.key, x->elem.key))
 			std::swap(x, y);
 		y->parent = x;
@@ -214,6 +215,40 @@ class PairingHeap {
 		return res;
 	}
 	/**
+	 * Deletes the root of the subtree rooted at p.
+	 */
+	PHNode *delete_min(PHNode *p) {
+		PHNode *pson = p->son;
+		delete p;
+		return combine_siblings(pson);
+	}
+
+	/**
+	 * Cuts node p from the heap.
+	 * Does nothing if p is the root.
+	 */
+	void cut(PHNode *p) {
+		//if p is already at the root, do nothing
+		if (p->parent) {
+			// if the node is the only child of its parent
+			if (p->left == p) {
+				PHNode *pp = p->parent;
+				pp->son = 0;
+				p->parent = 0;
+			} else { // else, it has siblings
+				PHNode *pp = p->parent;
+				// if its parent points to this node, point to another sibling.
+				if (pp->son == p)
+					pp->son = p->left;
+				p->parent = 0;
+				p->left->right = p->right;
+				p->right->left = p->left;
+				p->left = p->right = p;
+			}
+		}
+	}
+
+	/**
 	 * disposes the entire heap recursively.
 	 * TODO: eliminate recursion.
 	 */
@@ -231,15 +266,14 @@ class PairingHeap {
 			delete x;
 		}
 	}
+
 public:
-	typedef Element Element;
-	PairingHeap(int max_size) :
-			sz(0), maxsz(max_size), root(0) {
-		pos = new PHNode*[max_size];
-		memset(pos, 0, max_size * sizeof(PHNode*));
+	typedef Element PH_Element;
+	typedef PHNode PH_Node;
+	PairingHeap() :
+			sz(0), root(0) {
 	}
 	~PairingHeap() {
-		delete[] pos;
 		if (root)
 			recursively_destruct(root);
 	}
@@ -250,114 +284,90 @@ public:
 		return sz;
 	}
 	/**
-	 * returns the maximal size.
-	 */
-	size_t max_size() const {
-		return maxsz;
-	}
-	/**
-	 * determines whether there's an element in the pq with the given id.
-	 * This won't throw any exceptions.
-	 */
-	bool contains(int id) {
-		return id >= 0 && id < maxsz && pos[id] != 0;
-	}
-	/**
-	 * returns the current key of the element with the given id.
-	 * Throws an exception if the id is invalid or there's no element with that id.
-	 */
-	const T &get_key(int id) const {
-		ensure_existing(id);
-		return pos[id]->elem.key;
-	}
-	/**
-	 * try to insert an element with the given id and key.
-	 * Throws an exception if the id is invalid or there's already an element with that id.
-
+	 * insert an element with the given key and id.
 	 * Algo:
 	 *		make a new node and merge it with the current root.
 	 */
-	void insert(int id, const T& key) {
-		ensure_not_existing(id);
-		PHNode *p = new PHNode(Element(id, key));
-		pos[id] = p;
-		root = root ? merge(root, p) : p;
+	PHNode *insert(const KeyType& key, const IdType& id) {
+		PHNode *p = new PHNode(Element(key, id));
+		root = merge(root, p);
 		++sz;
+		return p;
 	}
 	/**
 	 * returns the current minimal element in the priority queue.
-	 * Throws an exception if the pq is empty.
+	 * Throws an exception if the priority queue is empty.
 	 */
-	const Element &find_min() const {
+	const PH_Element &find_min() const {
 		ensure_nonempty();
 		return root->elem;
 	}
 	/**
-	 * removes and returns the current minimum in the pq.
-	 * Throws an exception if the pq is empty.
+	 * removes and returns the current minimum in the priority queue.
+	 * Throws an exception if the priority queue is empty.
 	 * Algo:
-	 * 		remove the root and combine the children of the root.
+	 * 		call delete_min on the root.
+	 * 		(remove the root and combine the children of the root.)
 	 */
-	Element delete_min() {
+	PH_Element delete_min() {
 		ensure_nonempty();
 		Element r = root->elem;
-		pos[r.id] = 0;
-		PHNode *rson = root->son;
-		delete root;
+		root = delete_min(root);
 		--sz;
-		root = combine_siblings(rson);
 		return r;
 	}
 
 	/**
-	 * removes and returns the element with the given id.
-	 * Throws an exception if the id is invalid or there's no element with that id.
+	 * removes and returns the element at the given address.
 	 * Algo:
-	 * 		1. Decrease the key to the current minimum;
-	 * 			Note that decrease_key will make sure the node to remove will be the new root.
-	 *		2. Delete_min
+	 * 		1. If the node is the root, call delete_min instead.
+	 *		2. Otherwise, cut the node, call delete_min on it and then merge the result with the root.
 	 */
-	Element remove(int id) {
-		ensure_existing(id);
-		decrease_key(id, root->elem.key);
-		return delete_min();
+	PH_Element remove(PHNode *node) {
+		if (node->parent == 0)
+			return delete_min();
+		else {
+			Element r = node->elem;
+			cut(node);
+			PHNode *p = delete_min(node);
+			--sz;
+			root = merge(root, p);
+			return r;
+		}
 	}
 
 	/**
-	 * try to decrease the key of the element with the given id.
-	 * Throws an exception if the id is invalid or there's no element with that id.
+	 * trys to decrease the key of the element at the given address.
 	 * It does nothing if newkey is larger than the current key of the element.
-	 * If the new key is as small as the root, that node will be the made the new root, even if its current key equals to the new one.
+	 * If newkey is as small as the root, the node will be made the new root.
 	 * Algo:
-	 * 		cut the node with that id from the heap and then merge the subtree with the root.
+	 * 		1. If the node is the root, just change the key.
+	 * 		2. Otherwise, cut the node, change the key and then merge it with the root.
 	 */
-	void decrease_key(int id, const T& newkey) {
-		if (!less(get_key(id), newkey)) {
-			PHNode *p = pos[id];
-			// if the node is the root, we're happy.
-			if (p == root)
-				p->elem.key = newkey;
-			else {
-				// if the node is the only child of its parent
-				if (p->left == p) {
-					PHNode *pp = p->parent;
-					pp->son = 0;
-					p->parent = 0;
-				} else { // else, it has siblings
-					PHNode *pp = p->parent;
-					// if its parent points to this node, point to another sibling.
-					if (pp->son == p)
-						pp->son = p->left;
-					p->parent = 0;
-					p->left->right = p->right;
-					p->right->left = p->left;
-					p->left = p->right = p;
-				}
-				// do the change, and merge.
-				p->elem.key = newkey;
-				// this ordering of the arguments makes sure that if they have the same key, the new node will be the root.
-				root = merge(p, root);
+	void decrease_key(PHNode *node, const KeyType& newkey) {
+		if (!less(node->elem.key, newkey)) {
+			//if the node is the root, we're happy.
+			if (node->parent == 0) {
+				node->elem.key = newkey;
+			} else {
+				cut(node);
+				node->elem.key = newkey;
+				root = merge(node, root);
 			}
+		}
+	}
+
+	/**
+	 * merges "this" PairingHeap with the argument.
+	 * The PH in the argument will be made empty, but the elements in it will not be removed (but merged to "this").
+	 * Pointers to the elements of the argument remain valid.
+	 */
+	void merge(PairingHeap<KeyType, IdType, Comparator> &ph) {
+		if(&ph != this) {
+			sz += ph.sz;
+			root = merge(root, ph.root);
+			ph.sz = 0;
+			ph.root = 0;
 		}
 	}
 };
@@ -365,16 +375,7 @@ public:
 /**
  * The following are possible exceptions.
  */
-template<typename T, typename Comparator>
-const PH_Exception PairingHeap<T, Comparator>::PH_EX_ALREADY_EXISTS(
-		"An element with the same ID already exists.");
-template<typename T, typename Comparator>
-const PH_Exception PairingHeap<T, Comparator>::PH_EX_EMPTY(
-		"The heap is empty!");
-template<typename T, typename Comparator>
-const PH_Exception PairingHeap<T, Comparator>::PH_EX_BAD_ID("ID out of range!");
-template<typename T, typename Comparator>
-const PH_Exception PairingHeap<T, Comparator>::PH_EX_NO_SUCH_ELEMENT(
-		"The heap contains no element with this ID!");
+template<typename KeyType, typename IdType, typename Comparator>
+const PH_Exception PairingHeap<KeyType, IdType, Comparator>::PH_EX_EMPTY("The heap is empty!");
 
 #endif /* PAIRINGHEAP_H_ */
